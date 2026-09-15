@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace CoWorkly.Models
+﻿namespace CoWorkly.Models
 {
-    class User
+    public class User
     {
-        public int Id { get; set; } 
-        public String Username { get; set; }
-        public String Email { get; set; }
-        public string PasswordHash { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = "Client"; 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
