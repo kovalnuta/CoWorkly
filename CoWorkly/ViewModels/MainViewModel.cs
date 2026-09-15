@@ -13,14 +13,11 @@ namespace CoWorkly.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
-        // Текущий уровень навигации
-        [ObservableProperty] private int _currentLevel = 1; // 1=этажи, 2=комнаты, 3=места
+        [ObservableProperty] private int _currentLevel = 1; 
 
-        // Текущие выбранные сущности
         [ObservableProperty] private Floor? _selectedFloor;
         [ObservableProperty] private Room? _selectedRoom;
 
-        // Данные для отображения
         [ObservableProperty] private ObservableCollection<Floor> _floors = new();
         [ObservableProperty] private ObservableCollection<Room> _rooms = new();
         [ObservableProperty] private ObservableCollection<SeatDisplay> _seats = new();
@@ -171,7 +168,6 @@ namespace CoWorkly.ViewModels
             {
                 if (activeBooking.UserId == App.CurrentUserId)
                 {
-                    // Отмена своей брони
                     context.Bookings.Remove(activeBooking);
                     context.SaveChanges();
                     StatusMessage = $"✓ Бронь места {seat.SeatNumber} отменена";
@@ -184,7 +180,6 @@ namespace CoWorkly.ViewModels
             }
             else
             {
-                // Новая бронь на 2 часа
                 var newBooking = new Booking
                 {
                     UserId = App.CurrentUserId,
@@ -197,7 +192,6 @@ namespace CoWorkly.ViewModels
                 StatusMessage = $"✓ Место {seat.SeatNumber} забронировано до {newBooking.EndTime:HH:mm}";
             }
 
-            // Перезагружаем места
             if (SelectedRoom != null) LoadSeats(SelectedRoom.Id);
         }
 
@@ -213,20 +207,17 @@ namespace CoWorkly.ViewModels
                 return;
             }
 
-            // Пользователи
             context.Users.AddRange(
                 new User { Username = "Анна", Email = "anna@coworkly.com", Role = "Admin" },
                 new User { Username = "Кирилл", Email = "kirill@coworkly.com", Role = "Client" }
             );
 
-            // 3 этажа
             var floor1 = new Floor { Number = 1, Description = "Open space и переговорные" };
             var floor2 = new Floor { Number = 2, Description = "Рабочие зоны" };
             var floor3 = new Floor { Number = 3, Description = "VIP-зона и кухня" };
             context.Floors.AddRange(floor1, floor2, floor3);
             context.SaveChanges();
 
-            // === ЭТАЖ 1 ===
             var room101 = new Room { FloorId = floor1.Id, Name = "101: Open Space А", Type = "open_space", Capacity = 12 };
             var room102 = new Room { FloorId = floor1.Id, Name = "102: Переговорная «Токио»", Type = "meeting_room", Capacity = 6 };
             var room103 = new Room { FloorId = floor1.Id, Name = "103: Phone Booth", Type = "phone_booth", Capacity = 2 };
@@ -237,7 +228,6 @@ namespace CoWorkly.ViewModels
             AddSeats(context, room102.Id, rows: 2, columns: 3, prefix: "T");
             AddSeats(context, room103.Id, rows: 1, columns: 2, prefix: "PB");
 
-            // === ЭТАЖ 2 ===
             var room201 = new Room { FloorId = floor2.Id, Name = "201: Open Space Б", Type = "open_space", Capacity = 16 };
             var room202 = new Room { FloorId = floor2.Id, Name = "202: Переговорная «Париж»", Type = "meeting_room", Capacity = 4 };
             context.Rooms.AddRange(room201, room202);
@@ -246,7 +236,6 @@ namespace CoWorkly.ViewModels
             AddSeats(context, room201.Id, rows: 4, columns: 4, prefix: "B");
             AddSeats(context, room202.Id, rows: 2, columns: 2, prefix: "P");
 
-            // === ЭТАЖ 3 ===
             var room301 = new Room { FloorId = floor3.Id, Name = "301: VIP-зона", Type = "open_space", Capacity = 8 };
             var room302 = new Room { FloorId = floor3.Id, Name = "302: Кухня-лаунж", Type = "kitchen", Capacity = 10 };
             context.Rooms.AddRange(room301, room302);

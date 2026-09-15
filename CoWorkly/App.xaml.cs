@@ -44,28 +44,24 @@ namespace CoWorkly
                 options.UseSqlite("Data Source=coworkly.db"));
         }
 
-        /// <summary>
-        /// Начальные данные: пользователи, этажи, комнаты, места.
-        /// </summary>
+   
         private static void SeedData(AppDbContext db)
         {
             if (db.Users.Any()) return;
 
-            // --- Пользователи ---
             db.Users.AddRange(
-                new User { Username = "Анна", Email = "anna@coworkly.com", Role = "Admin" },
-                new User { Username = "Кирилл", Email = "kirill@coworkly.com", Role = "Client" }
+                new User { Username = "Анна", Email = "anna@coworkly.com", Role = "Admin", Password = "12345" },
+                new User { Username = "Кирилл", Email = "kirill@coworkly.com", Role = "Client", Password = "12345" }
             );
+         
             db.SaveChanges();
 
-            // --- Этажи ---
             var floor1 = new Floor { Number = 1, Description = "Open space и переговорные" };
             var floor2 = new Floor { Number = 2, Description = "Рабочие зоны" };
             var floor3 = new Floor { Number = 3, Description = "VIP-зона и кухня" };
             db.Floors.AddRange(floor1, floor2, floor3);
             db.SaveChanges();
 
-            // --- Комнаты ---
             var room101 = new Room { FloorId = floor1.Id, Name = "101: Open Space А", Type = "open_space", Capacity = 12 };
             var room102 = new Room { FloorId = floor1.Id, Name = "102: Переговорная «Токио»", Type = "meeting_room", Capacity = 6 };
             var room103 = new Room { FloorId = floor1.Id, Name = "103: Phone Booth", Type = "phone_booth", Capacity = 2 };
@@ -79,7 +75,6 @@ namespace CoWorkly
             db.Rooms.AddRange(room101, room102, room103, room201, room202, room301, room302);
             db.SaveChanges();
 
-            // --- Места ---
             AddSeats(db, room101.Id, rows: 3, columns: 4, prefix: "A");
             AddSeats(db, room102.Id, rows: 2, columns: 3, prefix: "T");
             AddSeats(db, room103.Id, rows: 1, columns: 2, prefix: "PB");
