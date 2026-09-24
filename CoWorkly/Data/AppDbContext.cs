@@ -19,6 +19,9 @@ namespace CoWorkly.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Все таблицы — в схеме CoWorkly
+            modelBuilder.HasDefaultSchema("CoWorkly");
+
             modelBuilder.Entity<Room>()
                 .HasOne(r => r.Floor)
                 .WithMany()
@@ -42,6 +45,14 @@ namespace CoWorkly.Data
                 .WithMany()
                 .HasForeignKey(b => b.SeatId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
         }
     }
 }

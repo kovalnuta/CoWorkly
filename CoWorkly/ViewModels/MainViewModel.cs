@@ -13,11 +13,14 @@ namespace CoWorkly.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
-        [ObservableProperty] private int _currentLevel = 1; 
+        // Текущий уровень навигации
+        [ObservableProperty] private int _currentLevel = 1; // 1=этажи, 2=комнаты, 3=места
 
+        // Текущие выбранные сущности
         [ObservableProperty] private Floor? _selectedFloor;
         [ObservableProperty] private Room? _selectedRoom;
 
+        // Данные для отображения
         [ObservableProperty] private ObservableCollection<Floor> _floors = new();
         [ObservableProperty] private ObservableCollection<Room> _rooms = new();
         [ObservableProperty] private ObservableCollection<SeatDisplay> _seats = new();
@@ -39,10 +42,15 @@ namespace CoWorkly.ViewModels
 
         private void LoadCurrentUser()
         {
-            using var scope = App.ServiceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var user = context.Users.FirstOrDefault(u => u.Id == App.CurrentUserId);
-            CurrentUserName = user != null ? $"👤 {user.Username} ({user.Role})" : "Гость";
+            var user = Session.CurrentUser;
+
+            if (user == null)
+            {
+                CurrentUserName = "Гость";
+                return;
+            }
+
+            CurrentUserName = $"👤 {user.Username} ({user.Role})";
         }
 
         private void LoadFloors()
@@ -104,6 +112,8 @@ namespace CoWorkly.ViewModels
             MaxRow = seats.Any() ? seats.Max(s => s.Row) : 1;
             MaxColumn = seats.Any() ? seats.Max(s => s.Column) : 1;
 
+            var currentUserId = Session.CurrentUser?.Id ?? 0;
+
             foreach (var seat in seats)
             {
                 var booking = activeBookings.FirstOrDefault(b => b.SeatId == seat.Id);
@@ -120,7 +130,7 @@ namespace CoWorkly.ViewModels
                     display.Status = SeatStatus.Free;
                     display.DisplayText = seat.Number;
                 }
-                else if (booking.UserId == App.CurrentUserId)
+                else if (booking.UserId == currentUserId)
                 {
                     display.Status = SeatStatus.MyBooking;
                     display.DisplayText = "✓";
@@ -156,6 +166,9 @@ namespace CoWorkly.ViewModels
         [RelayCommand]
         private void SelectSeat(SeatDisplay seat)
         {
+            var currentUserId = Session.CurrentUser?.Id ?? 0;
+            if (currentUserId == 0) return;
+
             using var scope = App.ServiceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -166,7 +179,7 @@ namespace CoWorkly.ViewModels
 
             if (activeBooking != null)
             {
-                if (activeBooking.UserId == App.CurrentUserId)
+                if (activeBooking.UserId == currentUserId)
                 {
                     context.Bookings.Remove(activeBooking);
                     context.SaveChanges();
@@ -174,7 +187,7 @@ namespace CoWorkly.ViewModels
                 }
                 else
                 {
-                    StatusMessage = $"⛔ Место {seat.SeatNumber} занято пользователем {activeBooking.User?.Username}";
+                    StatusMessage = $"⛔ Место {seat.SeatNumber} занято";
                     return;
                 }
             }
@@ -182,7 +195,7 @@ namespace CoWorkly.ViewModels
             {
                 var newBooking = new Booking
                 {
-                    UserId = App.CurrentUserId,
+                    UserId = currentUserId,
                     SeatId = seat.SeatId,
                     StartTime = DateTime.Now,
                     EndTime = DateTime.Now.AddHours(2)
@@ -193,77 +206,6 @@ namespace CoWorkly.ViewModels
             }
 
             if (SelectedRoom != null) LoadSeats(SelectedRoom.Id);
-        }
-
-        [RelayCommand]
-        private void CreateTestData()
-        {
-            using var scope = App.ServiceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-            if (context.Floors.Any())
-            {
-                StatusMessage = "Тестовые данные уже созданы";
-                return;
-            }
-
-            context.Users.AddRange(
-                new User { Username = "Анна", Email = "anna@coworkly.com", Role = "Admin" },
-                new User { Username = "Кирилл", Email = "kirill@coworkly.com", Role = "Client" }
-            );
-
-            var floor1 = new Floor { Number = 1, Description = "Open space и переговорные" };
-            var floor2 = new Floor { Number = 2, Description = "Рабочие зоны" };
-            var floor3 = new Floor { Number = 3, Description = "VIP-зона и кухня" };
-            context.Floors.AddRange(floor1, floor2, floor3);
-            context.SaveChanges();
-
-            var room101 = new Room { FloorId = floor1.Id, Name = "101: Open Space А", Type = "open_space", Capacity = 12 };
-            var room102 = new Room { FloorId = floor1.Id, Name = "102: Переговорная «Токио»", Type = "meeting_room", Capacity = 6 };
-            var room103 = new Room { FloorId = floor1.Id, Name = "103: Phone Booth", Type = "phone_booth", Capacity = 2 };
-            context.Rooms.AddRange(room101, room102, room103);
-            context.SaveChanges();
-
-            AddSeats(context, room101.Id, rows: 3, columns: 4, prefix: "A");
-            AddSeats(context, room102.Id, rows: 2, columns: 3, prefix: "T");
-            AddSeats(context, room103.Id, rows: 1, columns: 2, prefix: "PB");
-
-            var room201 = new Room { FloorId = floor2.Id, Name = "201: Open Space Б", Type = "open_space", Capacity = 16 };
-            var room202 = new Room { FloorId = floor2.Id, Name = "202: Переговорная «Париж»", Type = "meeting_room", Capacity = 4 };
-            context.Rooms.AddRange(room201, room202);
-            context.SaveChanges();
-
-            AddSeats(context, room201.Id, rows: 4, columns: 4, prefix: "B");
-            AddSeats(context, room202.Id, rows: 2, columns: 2, prefix: "P");
-
-            var room301 = new Room { FloorId = floor3.Id, Name = "301: VIP-зона", Type = "open_space", Capacity = 8 };
-            var room302 = new Room { FloorId = floor3.Id, Name = "302: Кухня-лаунж", Type = "kitchen", Capacity = 10 };
-            context.Rooms.AddRange(room301, room302);
-            context.SaveChanges();
-
-            AddSeats(context, room301.Id, rows: 2, columns: 4, prefix: "V");
-            AddSeats(context, room302.Id, rows: 2, columns: 5, prefix: "K");
-
-            context.SaveChanges();
-            StatusMessage = "✓ Тестовые данные созданы: 3 этажа, 7 комнат, много мест";
-            LoadFloors();
-        }
-
-        private void AddSeats(AppDbContext context, int roomId, int rows, int columns, string prefix)
-        {
-            for (int r = 1; r <= rows; r++)
-            {
-                for (int c = 1; c <= columns; c++)
-                {
-                    context.Seats.Add(new Seat
-                    {
-                        RoomId = roomId,
-                        Row = r,
-                        Column = c,
-                        Number = $"{prefix}{(r - 1) * columns + c}"
-                    });
-                }
-            }
         }
     }
 
@@ -293,14 +235,14 @@ namespace CoWorkly.ViewModels
 
         public Brush StatusColor => Status switch
         {
-            SeatStatus.Free => new SolidColorBrush(Color.FromRgb(229, 231, 235)),     // серый
-            SeatStatus.MyBooking => new SolidColorBrush(Color.FromRgb(59, 130, 246)), // синий
-            SeatStatus.Busy => new SolidColorBrush(Color.FromRgb(239, 68, 68)),       // красный
+            SeatStatus.Free => new SolidColorBrush(Color.FromRgb(0xED, 0xEA, 0xE4)),
+            SeatStatus.MyBooking => new SolidColorBrush(Color.FromRgb(0xA8, 0xC5, 0xDA)),
+            SeatStatus.Busy => new SolidColorBrush(Color.FromRgb(0xE8, 0xB4, 0xB4)),
             _ => new SolidColorBrush(Colors.Gray)
         };
 
         public Brush TextColor => Status == SeatStatus.Free
-            ? new SolidColorBrush(Color.FromRgb(55, 65, 81))
+            ? new SolidColorBrush(Color.FromRgb(0x6B, 0x70, 0x7B))
             : new SolidColorBrush(Colors.White);
     }
 }

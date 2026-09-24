@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="CoWorkly.Tests/CoWorkly.Tests.csproj" />
   <Project Path="CoWorkly/CoWorkly.csproj" />
 </Solution>
