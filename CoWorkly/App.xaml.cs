@@ -5,55 +5,69 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using CoWorkly.Data;
 using CoWorkly.Models;
+using CoWorkly.Services;
 
 namespace CoWorkly
 {
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; } = null!;
-        public static int CurrentUserId { get; set; } = 0;
+
+        // Подключение к PostgreSQL от имени postgres.
+        // Замени ***** на реальный пароль пользователя postgres.
+        private const string ConnectionString =
+            "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=kasqu62#BK%71;Search Path=CoWorkly,public;Include Error Detail=true";
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            var serviceCollection = new ServiceCollection();
-            ConfigureServices(serviceCollection);
-            ServiceProvider = serviceCollection.BuildServiceProvider();
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            ServiceProvider = services.BuildServiceProvider();
 
             using (var scope = ServiceProvider.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                // Пересоздаём БД, чтобы схема совпадала с текущими моделями.
-                // Это лечит ошибку "no such table: Floors".
-                context.Database.EnsureDeleted();
+                // ВАЖНО: только EnsureCreated, без EnsureDeleted.
+                // Таблицы создадутся один раз. Данные сохраняются.
                 context.Database.EnsureCreated();
 
-                // Заполняем начальными данными.
                 SeedData(context);
             }
 
-            var loginWindow = new LoginWindow();
-            loginWindow.Show();
+            new LoginWindow().Show();
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlite("Data Source=coworkly.db"));
+                options.UseNpgsql(ConnectionString));
+
+            services.AddScoped<AuthService>();
         }
 
-   
         private static void SeedData(AppDbContext db)
         {
             if (db.Users.Any()) return;
 
             db.Users.AddRange(
-                new User { Username = "Анна", Email = "anna@coworkly.com", Role = "Admin", Password = "12345" },
-                new User { Username = "Кирилл", Email = "kirill@coworkly.com", Role = "Client", Password = "12345" }
+                new User
+                {
+                    Username = "Anna",
+                    Email = "anna@coworkly.com",
+                    Role = "Admin",
+                    PasswordHash = PasswordHasher.Hash("Passw0rd!")
+                },
+                new User
+                {
+                    Username = "Kirill",
+                    Email = "kirill@coworkly.com",
+                    Role = "Client",
+                    PasswordHash = PasswordHasher.Hash("Passw0rd!")
+                }
             );
-         
             db.SaveChanges();
 
             var floor1 = new Floor { Number = 1, Description = "Open space и переговорные" };

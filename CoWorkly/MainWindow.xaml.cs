@@ -13,9 +13,10 @@ namespace CoWorkly
 
         private void Logout_Click(object sender, RoutedEventArgs e)
         {
-            App.CurrentUserId = 0;
-            var loginWindow = new LoginWindow();
-            loginWindow.Show();
+            Session.SignOut();
+
+            var login = new LoginWindow();
+            login.Show();
             this.Close();
         }
     }

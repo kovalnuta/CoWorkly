@@ -1,133 +1,171 @@
-﻿using System;
-using System.Linq;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
-using CoWorkly.Data;
-using CoWorkly.Models;
+using CoWorkly.Services;
 
 namespace CoWorkly
 {
     public partial class LoginWindow : Window
     {
+        // Коды иконок шрифта Segoe MDL2 Assets
+        private const string EyeIconShow = "\uE7B3"; // открытый глаз — показать пароль
+        private const string EyeIconHide = "\uED1A"; // перечёркнутый глаз — скрыть пароль
+
         public LoginWindow()
         {
             InitializeComponent();
         }
 
- 
+        // ================ ВХОД ================
+
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            LoginError.Text = string.Empty;
-
-            var username = LoginUsernameBox.Text.Trim();
-            var password = LoginPasswordBox.Password;
-
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            {
-                LoginError.Text = "Введите имя пользователя и пароль.";
-                return;
-            }
+            ClearLoginErrors();
 
             using var scope = App.ServiceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
 
-            var user = context.Users.FirstOrDefault(u => u.Username == username);
+            string username = LoginUsernameBox.Text;
+            string password = GetPassword(LoginPasswordBox, LoginPasswordVisible);
 
-            if (user == null)
+            var result = auth.Login(username, password);
+
+            if (!result.Success)
             {
-                LoginError.Text = "Пользователь с таким именем не найден.";
+                if (!string.IsNullOrEmpty(result.GeneralError))
+                    LoginError.Text = result.GeneralError;
+
                 return;
             }
 
-            if (user.Password != password)
-            {
-                LoginError.Text = "Неверный пароль.";
-                return;
-            }
-
-            App.CurrentUserId = user.Id;
-
-            var mainWindow = new MainWindow();
-            mainWindow.Show();
-            this.Close();
+            Session.SignIn(result.User!);
+            OpenMainWindow();
         }
+
+        // ================ РЕГИСТРАЦИЯ ================
 
         private void Register_Click(object sender, RoutedEventArgs e)
         {
-            RegError.Text = string.Empty;
-
-            var username = RegUsernameBox.Text.Trim();
-            var email = RegEmailBox.Text.Trim();
-            var password = RegPasswordBox.Password;
-            var confirm = RegConfirmBox.Password;
-
-            // Валидация
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                RegError.Text = "Введите имя пользователя.";
-                return;
-            }
-
-            if (username.Length < 3)
-            {
-                RegError.Text = "Имя пользователя должно быть не короче 3 символов.";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains("@") || !email.Contains("."))
-            {
-                RegError.Text = "Введите корректный email.";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 5)
-            {
-                RegError.Text = "Пароль должен быть не короче 5 символов.";
-                return;
-            }
-
-            if (password != confirm)
-            {
-                RegError.Text = "Пароли не совпадают.";
-                return;
-            }
+            ClearRegisterErrors();
 
             using var scope = App.ServiceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
 
-            if (context.Users.Any(u => u.Username == username))
+            string username = RegUsernameBox.Text;
+            string email = RegEmailBox.Text;
+            string password = GetPassword(RegPasswordBox, RegPasswordVisible);
+            string confirm = GetPassword(RegConfirmBox, RegConfirmVisible);
+
+            var result = auth.Register(username, email, password, confirm);
+
+            if (!result.Success)
             {
-                RegError.Text = "Пользователь с таким именем уже существует.";
+                ShowError(RegUsernameError, result.UsernameError);
+                ShowError(RegEmailError, result.EmailError);
+                ShowError(RegPasswordError, result.PasswordError);
+                ShowError(RegConfirmError, result.ConfirmError);
+
+                if (!string.IsNullOrEmpty(result.GeneralError))
+                    RegError.Text = result.GeneralError;
+
                 return;
             }
 
-            if (context.Users.Any(u => u.Email == email))
-            {
-                RegError.Text = "Пользователь с таким email уже существует.";
-                return;
-            }
-
-            var newUser = new User
-            {
-                Username = username,
-                Email = email,
-                Password = password,
-                Role = "Client",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            context.Users.Add(newUser);
-            context.SaveChanges();
-            App.CurrentUserId = newUser.Id;
+            Session.SignIn(result.User!);
 
             MessageBox.Show(
-                $"Добро пожаловать, {newUser.Username}!",
+                $"Добро пожаловать, {result.User!.Username}!",
                 "Регистрация успешна",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
 
-            var mainWindow = new MainWindow();
-            mainWindow.Show();
+            OpenMainWindow();
+        }
+
+        private void ToggleLoginPassword_Click(object sender, RoutedEventArgs e)
+            => TogglePassword(LoginPasswordBox, LoginPasswordVisible, LoginPasswordToggle);
+
+        private void ToggleRegPassword_Click(object sender, RoutedEventArgs e)
+            => TogglePassword(RegPasswordBox, RegPasswordVisible, RegPasswordToggle);
+
+        private void ToggleRegConfirm_Click(object sender, RoutedEventArgs e)
+            => TogglePassword(RegConfirmBox, RegConfirmVisible, RegConfirmToggle);
+
+        /// <summary>
+        /// Переключает между скрытым PasswordBox и видимым TextBox.
+        /// Синхронизирует текст в обоих направлениях и меняет иконку на кнопке.
+        /// </summary>
+        private void TogglePassword(PasswordBox pwd, TextBox txt, Button toggle)
+        {
+            if (pwd.Visibility == Visibility.Visible)
+            {
+            
+                txt.Text = pwd.Password;
+                pwd.Visibility = Visibility.Collapsed;
+                txt.Visibility = Visibility.Visible;
+                txt.Focus();
+                txt.CaretIndex = txt.Text.Length;
+                toggle.Content = EyeIconHide;
+                toggle.ToolTip = "Скрыть пароль";
+            }
+            else
+            {
+                // Переходим в режим "скрыть пароль"
+                pwd.Password = txt.Text;
+                txt.Visibility = Visibility.Collapsed;
+                pwd.Visibility = Visibility.Visible;
+                pwd.Focus();
+                toggle.Content = EyeIconShow;
+                toggle.ToolTip = "Показать пароль";
+            }
+        }
+
+        /// <summary>
+        /// Возвращает пароль из видимого в данный момент элемента — PasswordBox или TextBox.
+        /// </summary>
+        private string GetPassword(PasswordBox pwd, TextBox txt)
+        {
+            return pwd.Visibility == Visibility.Visible
+                ? pwd.Password
+                : txt.Text;
+        }
+
+        // ================ ВСПОМОГАТЕЛЬНОЕ ================
+
+        private void ShowError(TextBlock block, string? message)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                block.Text = string.Empty;
+                block.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                block.Text = message;
+                block.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void ClearLoginErrors()
+        {
+            LoginError.Text = string.Empty;
+            ShowError(LoginUsernameError, null);
+            ShowError(LoginPasswordError, null);
+        }
+
+        private void ClearRegisterErrors()
+        {
+            RegError.Text = string.Empty;
+            ShowError(RegUsernameError, null);
+            ShowError(RegEmailError, null);
+            ShowError(RegPasswordError, null);
+            ShowError(RegConfirmError, null);
+        }
+
+        private void OpenMainWindow()
+        {
+            var main = new MainWindow();
+            main.Show();
             this.Close();
         }
     }
