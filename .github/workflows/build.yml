@@ -21,7 +21,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore CoWorkly.sln
+        run: dotnet restore CoWorkly/CoWorkly.csproj
 
-      - name: Build solution
-        run: dotnet build CoWorkly.sln --configuration Release --no-restore
+      - name: Build project
+        run: dotnet build CoWorkly/CoWorkly.csproj --configuration Release --no-restore
