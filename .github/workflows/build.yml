@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    branches: [ master, main, auth ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    name: Build CoWorkly
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore CoWorkly.sln
+
+      - name: Build solution
+        run: dotnet build CoWorkly.sln --configuration Release --no-restore
