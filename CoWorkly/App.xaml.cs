@@ -39,6 +39,7 @@ namespace CoWorkly
             new LoginWindow().Show();
         }
 
+
         private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options =>
