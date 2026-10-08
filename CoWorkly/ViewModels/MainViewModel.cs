@@ -13,24 +13,18 @@ namespace CoWorkly.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
-        // Текущий уровень навигации
-        [ObservableProperty] private int _currentLevel = 1; // 1=этажи, 2=комнаты, 3=места
-
-        // Текущие выбранные сущности
+        [ObservableProperty] private int _currentLevel = 1;
         [ObservableProperty] private Floor? _selectedFloor;
         [ObservableProperty] private Room? _selectedRoom;
 
-        // Данные для отображения
         [ObservableProperty] private ObservableCollection<Floor> _floors = new();
         [ObservableProperty] private ObservableCollection<Room> _rooms = new();
         [ObservableProperty] private ObservableCollection<SeatDisplay> _seats = new();
 
-        // Статус
         [ObservableProperty] private string _currentUserName = "Гость";
         [ObservableProperty] private string _statusMessage = "Выберите этаж";
         [ObservableProperty] private string _breadcrumb = "🏢 Коворкинг";
 
-        // Максимальные размеры для сетки мест
         public int MaxRow { get; private set; } = 1;
         public int MaxColumn { get; private set; } = 1;
 
@@ -57,9 +51,12 @@ namespace CoWorkly.ViewModels
         {
             using var scope = App.ServiceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
             var floors = context.Floors.OrderBy(f => f.Number).ToList();
+
             Floors.Clear();
             foreach (var f in floors) Floors.Add(f);
+
             CurrentLevel = 1;
             Breadcrumb = "🏢 Коворкинг → Выберите этаж";
             StatusMessage = $"Доступно этажей: {floors.Count}";
@@ -68,15 +65,21 @@ namespace CoWorkly.ViewModels
         [RelayCommand]
         private void SelectFloor(Floor floor)
         {
+            if (floor == null) return;
+
             SelectedFloor = floor;
+
             using var scope = App.ServiceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
             var rooms = context.Rooms
                 .Where(r => r.FloorId == floor.Id)
                 .OrderBy(r => r.Name)
                 .ToList();
+
             Rooms.Clear();
             foreach (var r in rooms) Rooms.Add(r);
+
             CurrentLevel = 2;
             Breadcrumb = $"🏢 Коворкинг → Этаж {floor.Number}";
             StatusMessage = $"Комнат на этаже: {rooms.Count}";
@@ -85,6 +88,8 @@ namespace CoWorkly.ViewModels
         [RelayCommand]
         private void SelectRoom(Room room)
         {
+            if (room == null) return;
+
             SelectedRoom = room;
             LoadSeats(room.Id);
             CurrentLevel = 3;
@@ -98,17 +103,21 @@ namespace CoWorkly.ViewModels
 
             var seats = context.Seats
                 .Where(s => s.RoomId == roomId)
-                .OrderBy(s => s.Row).ThenBy(s => s.Column)
+                .OrderBy(s => s.Row)
+                .ThenBy(s => s.Column)
                 .ToList();
 
+            var now = DateTime.UtcNow;
+
             var activeBookings = context.Bookings
-                .Where(b => b.Seat.RoomId == roomId &&
-                            b.StartTime <= DateTime.Now &&
-                            b.EndTime > DateTime.Now)
+                .Where(b => b.Seat.RoomId == roomId
+                            && b.StartTime <= now
+                            && b.EndTime > now)
                 .Include(b => b.User)
                 .ToList();
 
             Seats.Clear();
+
             MaxRow = seats.Any() ? seats.Max(s => s.Row) : 1;
             MaxColumn = seats.Any() ? seats.Max(s => s.Column) : 1;
 
@@ -117,6 +126,7 @@ namespace CoWorkly.ViewModels
             foreach (var seat in seats)
             {
                 var booking = activeBookings.FirstOrDefault(b => b.SeatId == seat.Id);
+
                 var display = new SeatDisplay
                 {
                     SeatId = seat.Id,
@@ -129,22 +139,28 @@ namespace CoWorkly.ViewModels
                 {
                     display.Status = SeatStatus.Free;
                     display.DisplayText = seat.Number;
+                    display.Tooltip = $"Место {seat.Number} — свободно";
                 }
                 else if (booking.UserId == currentUserId)
                 {
                     display.Status = SeatStatus.MyBooking;
                     display.DisplayText = "✓";
-                    display.Tooltip = $"Ваша бронь до {booking.EndTime:HH:mm}";
+                    display.Tooltip = $"Ваша бронь до {booking.EndTime.ToLocalTime():HH:mm}";
                 }
                 else
                 {
                     display.Status = SeatStatus.Busy;
-                    display.DisplayText = booking.User?.Username.Substring(0, 1) ?? "?";
-                    display.Tooltip = $"Занято: {booking.User?.Username} до {booking.EndTime:HH:mm}";
+                    display.DisplayText = string.IsNullOrEmpty(booking.User?.Username)
+                        ? "?"
+                        : booking.User!.Username.Substring(0, 1).ToUpper();
+                    display.Tooltip = $"Занято: {booking.User?.Username} до {booking.EndTime.ToLocalTime():HH:mm}";
                 }
 
                 Seats.Add(display);
             }
+
+            OnPropertyChanged(nameof(MaxRow));
+            OnPropertyChanged(nameof(MaxColumn));
 
             var freeCount = Seats.Count(s => s.Status == SeatStatus.Free);
             StatusMessage = $"Свободно мест: {freeCount} из {Seats.Count}";
@@ -153,9 +169,9 @@ namespace CoWorkly.ViewModels
         [RelayCommand]
         private void GoBack()
         {
-            if (CurrentLevel == 3)
+            if (CurrentLevel == 3 && SelectedFloor != null)
             {
-                SelectFloor(SelectedFloor!);
+                SelectFloor(SelectedFloor);
             }
             else if (CurrentLevel == 2)
             {
@@ -166,16 +182,20 @@ namespace CoWorkly.ViewModels
         [RelayCommand]
         private void SelectSeat(SeatDisplay seat)
         {
+            if (seat == null) return;
+
             var currentUserId = Session.CurrentUser?.Id ?? 0;
             if (currentUserId == 0) return;
 
             using var scope = App.ServiceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+            var now = DateTime.UtcNow;
+
             var activeBooking = context.Bookings
-                .FirstOrDefault(b => b.SeatId == seat.SeatId &&
-                                     b.StartTime <= DateTime.Now &&
-                                     b.EndTime > DateTime.Now);
+                .FirstOrDefault(b => b.SeatId == seat.SeatId
+                                     && b.StartTime <= now
+                                     && b.EndTime > now);
 
             if (activeBooking != null)
             {
@@ -187,7 +207,7 @@ namespace CoWorkly.ViewModels
                 }
                 else
                 {
-                    StatusMessage = $"⛔ Место {seat.SeatNumber} занято";
+                    StatusMessage = $"⛔ Место {seat.SeatNumber} уже занято";
                     return;
                 }
             }
@@ -197,15 +217,19 @@ namespace CoWorkly.ViewModels
                 {
                     UserId = currentUserId,
                     SeatId = seat.SeatId,
-                    StartTime = DateTime.Now,
-                    EndTime = DateTime.Now.AddHours(2)
+                    StartTime = DateTime.UtcNow,
+                    EndTime = DateTime.UtcNow.AddHours(2),
+                    CreatedAt = DateTime.UtcNow
                 };
+
                 context.Bookings.Add(newBooking);
                 context.SaveChanges();
-                StatusMessage = $"✓ Место {seat.SeatNumber} забронировано до {newBooking.EndTime:HH:mm}";
+
+                StatusMessage = $"✓ Место {seat.SeatNumber} забронировано до {newBooking.EndTime.ToLocalTime():HH:mm}";
             }
 
-            if (SelectedRoom != null) LoadSeats(SelectedRoom.Id);
+            if (SelectedRoom != null)
+                LoadSeats(SelectedRoom.Id);
         }
     }
 
