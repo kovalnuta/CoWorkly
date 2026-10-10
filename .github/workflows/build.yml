@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ master, main, auth ]
+    branches: [ master, main, auth, unit_tests ]
   pull_request:
     branches: [ master, main ]
 
@@ -15,10 +15,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+      - name: Check for merge conflict markers
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Include *.cs,*.xaml,*.csproj,*.json,*.yml |
+                   Where-Object { $_.FullName -notmatch '\\bin\\|\\obj\\|\\.git\\' }
+          $found = $false
+          foreach ($f in $files) {
+            $content = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue
+            if ($content -match '<<<<<<<|>>>>>>>') {
+              Write-Host "Conflict marker found in $($f.FullName)"
+              $found = $true
+            }
+          }
+          if ($found) { exit 1 }
+
+      - name: Check that secret files are not committed
+        shell: pwsh
+        run: |
+          $bad = @(
+            "CoWorkly/appsettings_new.json",
+            "CoWorkly/coworkly.db"
+          )
+          $found = $false
+          foreach ($path in $bad) {
+            if (Test-Path $path) {
+              Write-Host "Forbidden file found: $path"
+              $found = $true
+            }
+          }
+          if ($found) { exit 1 }
 
       - name: Restore dependencies
         run: dotnet restore CoWorkly/CoWorkly.csproj
