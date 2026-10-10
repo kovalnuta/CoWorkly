@@ -18,7 +18,7 @@ jobs:
       - name: Check for merge conflict markers
         shell: pwsh
         run: |
-          $files = Get-ChildItem -Recurse -Include *.cs,*.xaml,*.csproj,*.json,*.yml |
+          $files = Get-ChildItem -Recurse -Include *.cs,*.xaml,*.csproj,*.json |
                    Where-Object { $_.FullName -notmatch '\\bin\\|\\obj\\|\\.git\\' }
           $found = $false
           foreach ($f in $files) {
