@@ -46,8 +46,16 @@ jobs:
           }
           if ($found) { exit 1 }
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
       - name: Restore dependencies
         run: dotnet restore CoWorkly/CoWorkly.csproj
 
       - name: Build project
         run: dotnet build CoWorkly/CoWorkly.csproj --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test CoWorkly.Tests/CoWorkly.Tests.csproj --configuration Release --verbosity normal
