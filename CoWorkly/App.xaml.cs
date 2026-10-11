@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using CoWorkly.Data;
 using CoWorkly.Models;
@@ -13,37 +14,35 @@ namespace CoWorkly
     {
         public static IServiceProvider ServiceProvider { get; private set; } = null!;
 
-        // Подключение к PostgreSQL от имени postgres.
-        // Замени ***** на реальный пароль пользователя postgres.
-        private const string ConnectionString =
-            "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=kasqu62#BK%71;Search Path=CoWorkly,public;Include Error Detail=true";
-
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings_new.json", optional: false, reloadOnChange: true)
+                .Build();
+
             var services = new ServiceCollection();
-            ConfigureServices(services);
+            services.AddSingleton<IConfiguration>(configuration);
+            ConfigureServices(services, configuration);
             ServiceProvider = services.BuildServiceProvider();
 
             using (var scope = ServiceProvider.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                // ВАЖНО: только EnsureCreated, без EnsureDeleted.
-                // Таблицы создадутся один раз. Данные сохраняются.
-                context.Database.EnsureCreated();
-
+                context.Database.Migrate();
                 SeedData(context);
             }
 
             new LoginWindow().Show();
         }
 
-        private void ConfigureServices(IServiceCollection services)
+        private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(ConnectionString));
+                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<AuthService>();
         }
