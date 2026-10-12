@@ -37,6 +37,7 @@
     <Content Remove="C:\Users\koval\.nuget\packages\materialdesignthemes\5.4.0-ci1482\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-Italic.ttf" />
     <Content Remove="C:\Users\koval\.nuget\packages\materialdesignthemes\5.4.0-ci1482\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-Light.ttf" />
     <Content Remove="C:\Users\koval\.nuget\packages\materialdesignthemes\5.4.0-ci1482\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-LightItalic.ttf" />
+	  
     <Content Remove="C:\Users\koval\.nuget\packages\materialdesignthemes\5.4.0-ci1482\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-Regular.ttf" />
   </ItemGroup>
 
@@ -46,6 +47,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="MaterialDesignColors" Version="5.4.0-ci1482" />
 		<PackageReference Include="MaterialDesignThemes" Version="5.4.0-ci1482" />
@@ -62,6 +64,15 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
 	</ItemGroup>
+	<ItemGroup>
+		<None Update="appsettings_new.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="appsettings.Example.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	
 
 	<ItemGroup>
 	  <None Update="appsettings.Example.json">
