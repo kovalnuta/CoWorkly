@@ -1,306 +1,316 @@
-﻿<Window x:Class="CoWorkly.LoginWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="CoWorkly — Вход в систему"
-        Height="720" Width="480"
-        WindowStartupLocation="CenterScreen"
-        Background="#FAF7F2"
-        ResizeMode="NoResize">
+﻿<Window
+    x:Class="CoWorkly.LoginWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    Title="CoWorkly"
+    Width="440"
+    Height="740"
+    MinWidth="420"
+    MinHeight="680"
+    AllowsTransparency="True"
+    Background="Transparent"
+    FontFamily="Segoe UI Variable Text, Segoe UI"
+    ResizeMode="CanResizeWithGrip"
+    SnapsToDevicePixels="True"
+    TextOptions.TextFormattingMode="Ideal"
+    TextOptions.TextRenderingMode="ClearType"
+    UseLayoutRounding="True"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
 
-    <Window.Resources>
-        <SolidColorBrush x:Key="PrimaryColor"   Color="#A8C5DA"/>
-        <SolidColorBrush x:Key="AccentColor"    Color="#B8D8C8"/>
-        <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="PageBackground" Color="#FAF7F2"/>
-        <SolidColorBrush x:Key="TextPrimary"    Color="#4A5568"/>
-        <SolidColorBrush x:Key="TextSecondary"  Color="#8A94A6"/>
-        <SolidColorBrush x:Key="BorderSoft"     Color="#E5E1DA"/>
-        <SolidColorBrush x:Key="ErrorColor"     Color="#D9534F"/>
 
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="16,10"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Opacity" Value="0.88"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bg" Property="Opacity" Value="0.75"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+    <!--  Появление окнаь проявление подъём на 16 px  -->
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation
+                        Storyboard.TargetName="Root"
+                        Storyboard.TargetProperty="Opacity"
+                        From="0"
+                        To="1"
+                        Duration="0:0:0.22" />
+                    <DoubleAnimation
+                        Storyboard.TargetName="RootTranslate"
+                        Storyboard.TargetProperty="Y"
+                        From="16"
+                        To="0"
+                        Duration="0:0:0.42">
+                        <DoubleAnimation.EasingFunction>
+                            <CubicEase EasingMode="EaseOut" />
+                        </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
 
-        <!-- Стиль для маленькой кнопки-иконки глаза -->
-        <Style x:Key="EyeButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Width" Value="34"/>
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Foreground" Value="#8A94A6"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="0,0,4,0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg"
-                                Background="Transparent"
-                                CornerRadius="6">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#EEF4F8"/>
-                                <Setter Property="Foreground" Value="#4A5568"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
 
-        <Style x:Key="FieldErrorStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource ErrorColor}"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="Margin" Value="0,2,0,6"/>
-            <Setter Property="Visibility" Value="Collapsed"/>
-        </Style>
+    <Border
+        x:Name="Root"
+        Background="{DynamicResource RegionBrush}"
+        CornerRadius="12"
+        RenderTransformOrigin="0.5,0.5">
+        <Border.RenderTransform>
+            <TranslateTransform x:Name="RootTranslate" Y="0" />
+        </Border.RenderTransform>
+        <Border.Effect>
+            <DropShadowEffect
+                BlurRadius="42"
+                Opacity="0.18"
+                ShadowDepth="0"
+                Color="{StaticResource ShadowColor}" />
+        </Border.Effect>
+        <Border.Clip>
+            <RectangleGeometry
+                RadiusX="12"
+                RadiusY="12"
+                Rect="0,0,10000,10000" />
+        </Border.Clip>
 
-        <Style TargetType="TextBox">
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Padding" Value="10,0"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Background" Value="#FDFCFB"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          VerticalAlignment="Center"
-                                          HorizontalScrollBarVisibility="Hidden"
-                                          VerticalScrollBarVisibility="Hidden"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <Style TargetType="PasswordBox">
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Padding" Value="10,0"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Background" Value="#FDFCFB"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="PasswordBox">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          VerticalAlignment="Center"
-                                          HorizontalScrollBarVisibility="Hidden"
-                                          VerticalScrollBarVisibility="Hidden"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+            <!--  Заголовок окна  -->
+            <Grid
+                Grid.Row="0"
+                Height="40"
+                Background="Transparent"
+                MouseLeftButtonDown="TitleBar_MouseDown">
+                <StackPanel
+                    Margin="16,0,0,0"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Border
+                        Width="18"
+                        Height="18"
+                        Background="{DynamicResource PrimaryBrush}"
+                        CornerRadius="5">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="11"
+                            FontWeight="Bold"
+                            Foreground="White"
+                            Text="C" />
+                    </Border>
+                    <TextBlock
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="12.5"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource PrimaryTextBrush}"
+                        Text="CoWorkly" />
+                </StackPanel>
 
-        <Style TargetType="TabItem">
-            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Bd"
-                                Background="Transparent"
-                                Padding="16,8"
-                                Margin="0,0,8,0"
+                <StackPanel
+                    Margin="0,5,6,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Orientation="Horizontal">
+                    <Button
+                        Click="Minimize_Click"
+                        Content="&#xE921;"
+                        Style="{StaticResource ChromeButton}"
+                        ToolTip="Свернуть" />
+                    <Button
+                        Click="Maximize_Click"
+                        Content="&#xE922;"
+                        Style="{StaticResource ChromeButton}"
+                        ToolTip="Развернуть" />
+                    <Button
+                        Click="Close_Click"
+                        Content="&#xE8BB;"
+                        Style="{StaticResource CloseChromeButton}"
+                        ToolTip="Закрыть" />
+                </StackPanel>
+            </Grid>
+
+            <!--  Содержимое  -->
+            <ScrollViewer
+                Grid.Row="1"
+                Padding="44,12,44,36"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+                <StackPanel MaxWidth="380">
+
+                    <!--  Заголовок  -->
+                    <TextBlock
+                        FontSize="24"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource PrimaryTextBrush}"
+                        Text="Вход в аккаунт" />
+                    <TextBlock
+                        Margin="0,6,0,28"
+                        FontSize="13"
+                        Foreground="{DynamicResource SecondaryTextBrush}"
+                        Text="Рабочее пространство CoWorkly" />
+
+                    <!--  белая плашка ездит под активной кнопкой  -->
+                    <Border
+                        Height="42"
+                        Margin="0,0,0,26"
+                        Padding="4"
+                        Background="{DynamicResource SecondaryRegionBrush}"
+                        CornerRadius="11">
+                        <Grid x:Name="TabsHost">
+                            <Border
+                                x:Name="TabIndicator"
+                                Width="180"
+                                HorizontalAlignment="Left"
+                                Background="{DynamicResource RegionBrush}"
                                 CornerRadius="8">
-                            <ContentPresenter ContentSource="Header"
-                                              HorizontalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#EEF4F8"/>
-                                <Setter Property="Foreground" Value="{StaticResource PrimaryColor}"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#F4F0EA"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
+                                <Border.RenderTransform>
+                                    <TranslateTransform x:Name="IndicatorTranslate" X="0" />
+                                </Border.RenderTransform>
+                                <Border.Effect>
+                                    <DropShadowEffect
+                                        BlurRadius="6"
+                                        Opacity="0.10"
+                                        ShadowDepth="1"
+                                        Color="{StaticResource ShadowColor}" />
+                                </Border.Effect>
+                            </Border>
 
-    <Grid Background="{StaticResource PageBackground}">
-        <Border Background="{StaticResource CardBackground}"
-                CornerRadius="16"
-                Margin="28"
-                Padding="36,28">
-            <Border.Effect>
-                <DropShadowEffect Color="#8A94A6" Direction="270"
-                                  ShadowDepth="2" BlurRadius="18" Opacity="0.18"/>
-            </Border.Effect>
+                            <UniformGrid Columns="2">
+                                <Button
+                                    x:Name="LoginTabBtn"
+                                    Click="LoginTab_Click"
+                                    Content="Вход"
+                                    Style="{StaticResource SegmentButton}"
+                                    Tag="Active" />
+                                <Button
+                                    x:Name="RegTabBtn"
+                                    Click="RegTab_Click"
+                                    Content="Регистрация"
+                                    Style="{StaticResource SegmentButton}" />
+                            </UniformGrid>
+                        </Grid>
+                    </Border>
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="CoWorkly"
-                               FontSize="28" FontWeight="Bold"
-                               Foreground="{StaticResource TextPrimary}"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,6"/>
-                    <TextBlock Text="Система бронирования коворкинга"
-                               FontSize="13"
-                               Foreground="{StaticResource TextSecondary}"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,22"/>
 
-                    <TabControl x:Name="AuthTabs"
-                                Background="Transparent"
-                                BorderThickness="0">
-                        <!-- ВКЛАДКА ВХОДА -->
-                        <TabItem Header="Вход">
-                            <StackPanel Margin="0,18,0,0">
-                                <TextBlock Text="Имя пользователя"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimary}"
-                                           Margin="0,0,0,6"/>
-                                <TextBox x:Name="LoginUsernameBox"/>
-                                <TextBlock x:Name="LoginUsernameError" Style="{StaticResource FieldErrorStyle}"/>
+                    <Grid>
+                        <!--  ВХОД  -->
+                        <StackPanel x:Name="LoginPanel">
+                            <hc:TextBox
+                                x:Name="LoginUsernameBox"
+                                Padding="12,10"
+                                hc:InfoElement.Placeholder="anna"
+                                hc:InfoElement.Title="Имя пользователя"
+                                hc:InfoElement.TitlePlacement="Top"
+                                FontSize="14" />
+                            <TextBlock x:Name="LoginUsernameError" Style="{StaticResource FieldError}" />
 
-                                <TextBlock Text="Пароль"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimary}"
-                                           Margin="0,6,0,6"/>
-                                <Grid>
-                                    <PasswordBox x:Name="LoginPasswordBox" Padding="10,0,40,0"/>
-                                    <TextBox x:Name="LoginPasswordVisible" Padding="10,0,40,0" Visibility="Collapsed"/>
-                                    <Button x:Name="LoginPasswordToggle"
-                                            Style="{StaticResource EyeButtonStyle}"
-                                            Content="&#xE7B3;"
-                                            ToolTip="Показать пароль"
-                                            Click="ToggleLoginPassword_Click"/>
-                                </Grid>
-                                <TextBlock x:Name="LoginPasswordError" Style="{StaticResource FieldErrorStyle}"/>
+                            <hc:PasswordBox
+                                x:Name="LoginPasswordBox"
+                                Margin="0,16,0,0"
+                                Padding="12,10"
+                                hc:InfoElement.Placeholder="••••••••"
+                                hc:InfoElement.Title="Пароль"
+                                hc:InfoElement.TitlePlacement="Top"
+                                FontSize="14"
+                                ShowEyeButton="True" />
+                            <TextBlock x:Name="LoginPasswordError" Style="{StaticResource FieldError}" />
 
-                                <Button Content="Войти" Click="Login_Click" Margin="0,14,0,12"/>
+                            <Button
+                                Margin="0,26,0,10"
+                                Click="Login_Click"
+                                Content="Продолжить"
+                                IsDefault="True"
+                                Style="{StaticResource PrimaryButton}" />
 
-                                <TextBlock x:Name="LoginError"
-                                           Text=""
-                                           Foreground="{StaticResource ErrorColor}"
-                                           FontSize="12"
-                                           HorizontalAlignment="Center"
-                                           TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </TabItem>
+                            <TextBlock
+                                x:Name="LoginError"
+                                HorizontalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{DynamicResource DangerBrush}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
 
-                        <!-- ВКЛАДКА РЕГИСТРАЦИИ -->
-                        <TabItem Header="Регистрация">
-                            <StackPanel Margin="0,18,0,0">
-                                <TextBlock Text="Имя пользователя"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimary}"
-                                           Margin="0,0,0,6"/>
-                                <TextBox x:Name="RegUsernameBox"/>
-                                <TextBlock x:Name="RegUsernameError" Style="{StaticResource FieldErrorStyle}"/>
+                        <!--  РЕГИСТРАЦИЯ  -->
+                        <StackPanel x:Name="RegPanel" Visibility="Collapsed">
+                            <hc:TextBox
+                                x:Name="RegUsernameBox"
+                                Padding="12,10"
+                                hc:InfoElement.Placeholder="Ваше имя"
+                                hc:InfoElement.Title="Имя пользователя"
+                                hc:InfoElement.TitlePlacement="Top"
+                                FontSize="14" />
+                            <TextBlock x:Name="RegUsernameError" Style="{StaticResource FieldError}" />
 
-                                <TextBlock Text="Email"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimary}"
-                                           Margin="0,6,0,6"/>
-                                <TextBox x:Name="RegEmailBox"/>
-                                <TextBlock x:Name="RegEmailError" Style="{StaticResource FieldErrorStyle}"/>
+                            <hc:TextBox
+                                x:Name="RegEmailBox"
+                                Margin="0,16,0,0"
+                                Padding="12,10"
+                                hc:InfoElement.Placeholder="you@example.com"
+                                hc:InfoElement.Title="Электронная почта"
+                                hc:InfoElement.TitlePlacement="Top"
+                                FontSize="14" />
+                            <TextBlock x:Name="RegEmailError" Style="{StaticResource FieldError}" />
 
-                                <TextBlock Text="Пароль"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimary}"
-                                           Margin="0,6,0,6"/>
-                                <Grid>
-                                    <PasswordBox x:Name="RegPasswordBox" Padding="10,0,40,0"/>
-                                    <TextBox x:Name="RegPasswordVisible" Padding="10,0,40,0" Visibility="Collapsed"/>
-                                    <Button x:Name="RegPasswordToggle"
-                                            Style="{StaticResource EyeButtonStyle}"
-                                            Content="&#xE7B3;"
-                                            ToolTip="Показать пароль"
-                                            Click="ToggleRegPassword_Click"/>
-                                </Grid>
-                                <TextBlock x:Name="RegPasswordError" Style="{StaticResource FieldErrorStyle}"/>
+                            <hc:PasswordBox
+                                x:Name="RegPasswordBox"
+                                Margin="0,16,0,0"
+                                Padding="12,10"
+                                hc:InfoElement.Placeholder="Минимум 8 символов"
+                                hc:InfoElement.Title="Пароль"
+                                hc:InfoElement.TitlePlacement="Top"
+                                FontSize="14"
+                                ShowEyeButton="True" />
+                            <TextBlock x:Name="RegPasswordError" Style="{StaticResource FieldError}" />
 
-                                <TextBlock Text="Повторите пароль"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimary}"
-                                           Margin="0,6,0,6"/>
-                                <Grid>
-                                    <PasswordBox x:Name="RegConfirmBox" Padding="10,0,40,0"/>
-                                    <TextBox x:Name="RegConfirmVisible" Padding="10,0,40,0" Visibility="Collapsed"/>
-                                    <Button x:Name="RegConfirmToggle"
-                                            Style="{StaticResource EyeButtonStyle}"
-                                            Content="&#xE7B3;"
-                                            ToolTip="Показать пароль"
-                                            Click="ToggleRegConfirm_Click"/>
-                                </Grid>
-                                <TextBlock x:Name="RegConfirmError" Style="{StaticResource FieldErrorStyle}"/>
+                            <hc:PasswordBox
+                                x:Name="RegConfirmBox"
+                                Margin="0,16,0,0"
+                                Padding="12,10"
+                                hc:InfoElement.Placeholder="Повторите пароль"
+                                hc:InfoElement.Title="Подтверждение пароля"
+                                hc:InfoElement.TitlePlacement="Top"
+                                FontSize="14"
+                                ShowEyeButton="True" />
+                            <TextBlock x:Name="RegConfirmError" Style="{StaticResource FieldError}" />
 
-                                <Button Content="Зарегистрироваться"
-                                        Click="Register_Click"
-                                        Background="{StaticResource AccentColor}"
-                                        Margin="0,14,0,12"/>
+                            <Button
+                                Margin="0,26,0,10"
+                                Click="Register_Click"
+                                Content="Создать аккаунт"
+                                Style="{StaticResource PrimaryButton}" />
 
-                                <TextBlock x:Name="RegError"
-                                           Text=""
-                                           Foreground="{StaticResource ErrorColor}"
-                                           FontSize="12"
-                                           HorizontalAlignment="Center"
-                                           TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </TabItem>
-                    </TabControl>
+                            <TextBlock
+                                x:Name="RegError"
+                                HorizontalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{DynamicResource DangerBrush}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
 
-                    <TextBlock Text="Тестовые аккаунты: Anna / Passw0rd!, Kirill / Passw0rd!"
-                               FontSize="11"
-                               Foreground="{StaticResource TextSecondary}"
-                               HorizontalAlignment="Center"
-                               Margin="0,22,0,0"/>
+                    <!--  Подсказка с тестовыми аккаунтами  -->
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="11.5"
+                        Foreground="{DynamicResource ThirdlyTextBrush}"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap">
+                        <Run Text="ТЕСТ:" />
+                        <Run
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource SecondaryTextBrush}"
+                            Text=" Anna" />
+                        <Run Foreground="{DynamicResource SecondaryTextBrush}" Text=" Passw0rd!" />
+                        <Run Text="  ·  " />
+                        <Run
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource SecondaryTextBrush}"
+                            Text="Kirill" />
+                        <Run Foreground="{DynamicResource SecondaryTextBrush}" Text=" Passw0rd!" />
+                    </TextBlock>
                 </StackPanel>
             </ScrollViewer>
-        </Border>
-    </Grid>
+        </Grid>
+    </Border>
 </Window>
