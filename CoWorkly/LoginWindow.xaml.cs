@@ -1,5 +1,10 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using Microsoft.Extensions.DependencyInjection;
 using CoWorkly.Services;
 
@@ -7,16 +12,138 @@ namespace CoWorkly
 {
     public partial class LoginWindow : Window
     {
-        // Коды иконок шрифта Segoe MDL2 Assets
-        private const string EyeIconShow = "\uE7B3"; // открытый глаз — показать пароль
-        private const string EyeIconHide = "\uED1A"; // перечёркнутый глаз — скрыть пароль
+        private bool _isLoginTab = true;
 
         public LoginWindow()
         {
             InitializeComponent();
+            Loaded += (_, _) => UpdateIndicator(false);
+
+            // Плашка вкладок подстраивается под ширину при изменении размера окна
+            SizeChanged += (_, _) => UpdateIndicator(false);
         }
 
-        // ================ ВХОД ================
+        // ============ Chrome ============
+
+        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2) { ToggleMaximize(); return; }
+            if (e.LeftButton == MouseButtonState.Pressed) DragMove();
+        }
+
+        private void Minimize_Click(object sender, RoutedEventArgs e)
+            => WindowState = WindowState.Minimized;
+
+        private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+        private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void ToggleMaximize()
+            => WindowState = WindowState == WindowState.Maximized
+                ? WindowState.Normal
+                : WindowState.Maximized;
+
+        protected override void OnStateChanged(EventArgs e)
+        {
+            base.OnStateChanged(e);
+            if (WindowState == WindowState.Maximized)
+            {
+                Root.CornerRadius = new CornerRadius(0);
+                Root.Clip = null;
+                Root.Effect = null;
+            }
+            else
+            {
+                Root.CornerRadius = new CornerRadius(12);
+                Root.Clip = new RectangleGeometry(new Rect(0, 0, 10000, 10000), 12, 12);
+                Root.Effect = new DropShadowEffect
+                {
+                    Color = (Color)FindResource("ShadowColor"),   // цвет из Themes/Colors.xaml
+                    BlurRadius = 42,
+                    ShadowDepth = 0,
+                    Opacity = 0.18
+                };
+            }
+        }
+
+        // ============ Segmented tabs ============
+
+        private void LoginTab_Click(object sender, RoutedEventArgs e) => SelectTab(true, true);
+        private void RegTab_Click(object sender, RoutedEventArgs e) => SelectTab(false, true);
+
+        private void SelectTab(bool login, bool animate)
+        {
+            if (_isLoginTab == login && animate) return;
+            _isLoginTab = login;
+
+            LoginTabBtn.Tag = login ? "Active" : null;
+            RegTabBtn.Tag = login ? null : "Active";
+
+            UpdateIndicator(animate);
+
+            if (login) SwitchContent(LoginPanel, RegPanel, animate);
+            else SwitchContent(RegPanel, LoginPanel, animate);
+        }
+
+        private void UpdateIndicator(bool animate)
+        {
+            if (TabsHost.ActualWidth <= 0) return;
+
+            double half = TabsHost.ActualWidth / 2.0;
+            TabIndicator.Width = half;
+
+            double targetX = _isLoginTab ? 0 : half;
+
+            if (!animate)
+            {
+                IndicatorTranslate.X = targetX;
+                return;
+            }
+
+            var anim = new DoubleAnimation(targetX, TimeSpan.FromMilliseconds(320))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            IndicatorTranslate.BeginAnimation(TranslateTransform.XProperty, anim);
+        }
+
+        //  Crossfade между панелями 
+
+        private static void SwitchContent(FrameworkElement show, FrameworkElement hide, bool animate)
+        {
+            if (!animate)
+            {
+                show.Visibility = Visibility.Visible;
+                hide.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (hide.Visibility == Visibility.Visible)
+            {
+                var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(140));
+                fadeOut.Completed += (_, _) => hide.Visibility = Visibility.Collapsed;
+                hide.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+            }
+
+            show.Visibility = Visibility.Visible;
+            show.Opacity = 0;
+
+            if (show.RenderTransform is not TranslateTransform)
+                show.RenderTransform = new TranslateTransform();
+
+            var tr = (TranslateTransform)show.RenderTransform;
+            tr.Y = 8;
+
+            var dur = TimeSpan.FromMilliseconds(240);
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            show.BeginAnimation(UIElement.OpacityProperty,
+                new DoubleAnimation(1, dur) { EasingFunction = ease });
+            tr.BeginAnimation(TranslateTransform.YProperty,
+                new DoubleAnimation(0, dur) { EasingFunction = ease });
+        }
+
+        //  Вход 
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
@@ -25,16 +152,14 @@ namespace CoWorkly
             using var scope = App.ServiceProvider.CreateScope();
             var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
 
-            string username = LoginUsernameBox.Text;
-            string password = GetPassword(LoginPasswordBox, LoginPasswordVisible);
-
-            var result = auth.Login(username, password);
+            var result = auth.Login(LoginUsernameBox.Text, LoginPasswordBox.Password);
 
             if (!result.Success)
             {
+                ShowError(LoginUsernameError, result.UsernameError);
+                ShowError(LoginPasswordError, result.PasswordError);
                 if (!string.IsNullOrEmpty(result.GeneralError))
                     LoginError.Text = result.GeneralError;
-
                 return;
             }
 
@@ -42,7 +167,7 @@ namespace CoWorkly
             OpenMainWindow();
         }
 
-        // ================ РЕГИСТРАЦИЯ ================
+        // ============ Регистрация ============
 
         private void Register_Click(object sender, RoutedEventArgs e)
         {
@@ -51,12 +176,9 @@ namespace CoWorkly
             using var scope = App.ServiceProvider.CreateScope();
             var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
 
-            string username = RegUsernameBox.Text;
-            string email = RegEmailBox.Text;
-            string password = GetPassword(RegPasswordBox, RegPasswordVisible);
-            string confirm = GetPassword(RegConfirmBox, RegConfirmVisible);
-
-            var result = auth.Register(username, email, password, confirm);
+            var result = auth.Register(
+                RegUsernameBox.Text, RegEmailBox.Text,
+                RegPasswordBox.Password, RegConfirmBox.Password);
 
             if (!result.Success)
             {
@@ -64,86 +186,26 @@ namespace CoWorkly
                 ShowError(RegEmailError, result.EmailError);
                 ShowError(RegPasswordError, result.PasswordError);
                 ShowError(RegConfirmError, result.ConfirmError);
-
                 if (!string.IsNullOrEmpty(result.GeneralError))
                     RegError.Text = result.GeneralError;
-
                 return;
             }
 
             Session.SignIn(result.User!);
-
-            MessageBox.Show(
+            // Окно сообщения в стиле HandyControl
+            HandyControl.Controls.MessageBox.Success(
                 $"Добро пожаловать, {result.User!.Username}!",
-                "Регистрация успешна",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-
+                "Аккаунт создан");
             OpenMainWindow();
         }
 
-        private void ToggleLoginPassword_Click(object sender, RoutedEventArgs e)
-            => TogglePassword(LoginPasswordBox, LoginPasswordVisible, LoginPasswordToggle);
 
-        private void ToggleRegPassword_Click(object sender, RoutedEventArgs e)
-            => TogglePassword(RegPasswordBox, RegPasswordVisible, RegPasswordToggle);
 
-        private void ToggleRegConfirm_Click(object sender, RoutedEventArgs e)
-            => TogglePassword(RegConfirmBox, RegConfirmVisible, RegConfirmToggle);
-
-        /// <summary>
-        /// Переключает между скрытым PasswordBox и видимым TextBox.
-        /// Синхронизирует текст в обоих направлениях и меняет иконку на кнопке.
-        /// </summary>
-        private void TogglePassword(PasswordBox pwd, TextBox txt, Button toggle)
+        private static void ShowError(TextBlock block, string? message)
         {
-            if (pwd.Visibility == Visibility.Visible)
-            {
-            
-                txt.Text = pwd.Password;
-                pwd.Visibility = Visibility.Collapsed;
-                txt.Visibility = Visibility.Visible;
-                txt.Focus();
-                txt.CaretIndex = txt.Text.Length;
-                toggle.Content = EyeIconHide;
-                toggle.ToolTip = "Скрыть пароль";
-            }
-            else
-            {
-                // Переходим в режим "скрыть пароль"
-                pwd.Password = txt.Text;
-                txt.Visibility = Visibility.Collapsed;
-                pwd.Visibility = Visibility.Visible;
-                pwd.Focus();
-                toggle.Content = EyeIconShow;
-                toggle.ToolTip = "Показать пароль";
-            }
-        }
-
-        /// <summary>
-        /// Возвращает пароль из видимого в данный момент элемента — PasswordBox или TextBox.
-        /// </summary>
-        private string GetPassword(PasswordBox pwd, TextBox txt)
-        {
-            return pwd.Visibility == Visibility.Visible
-                ? pwd.Password
-                : txt.Text;
-        }
-
-        // ================ ВСПОМОГАТЕЛЬНОЕ ================
-
-        private void ShowError(TextBlock block, string? message)
-        {
-            if (string.IsNullOrEmpty(message))
-            {
-                block.Text = string.Empty;
-                block.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                block.Text = message;
-                block.Visibility = Visibility.Visible;
-            }
+            block.Text = message ?? string.Empty;
+            block.Visibility = string.IsNullOrEmpty(message)
+                ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void ClearLoginErrors()
@@ -164,9 +226,8 @@ namespace CoWorkly
 
         private void OpenMainWindow()
         {
-            var main = new MainWindow();
-            main.Show();
-            this.Close();
+            new MainWindow().Show();
+            Close();
         }
     }
 }
