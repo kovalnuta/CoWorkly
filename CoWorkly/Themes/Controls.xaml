@@ -197,4 +197,200 @@
         <Setter Property="Visibility" Value="Collapsed" />
     </Style>
 
+    <!--  ================== Главное окно ==================  -->
+
+    <!--  Второстепенная кнопка: Выйти, Назад, Обновить  -->
+    <Style x:Key="GhostButton" TargetType="Button">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        x:Name="Bg"
+                        Padding="{TemplateBinding Padding}"
+                        Background="{StaticResource SecondaryRegionBrush}"
+                        CornerRadius="8">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource BorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource LightPrimaryBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource DarkPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  Карточка этажа / комнаты: при наведении поднимается, появляются тень и зелёная рамка  -->
+    <Style x:Key="CardButton" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Padding" Value="22" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="Lift" Y="0" />
+                        </Grid.RenderTransform>
+                        <Border
+                            x:Name="Bg"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{StaticResource RegionBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12">
+                            <Border.Effect>
+                                <DropShadowEffect
+                                    x:Name="Shadow"
+                                    BlurRadius="18"
+                                    Opacity="0"
+                                    ShadowDepth="3"
+                                    Color="{StaticResource ShadowColor}" />
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="Lift"
+                                        Storyboard.TargetProperty="Y"
+                                        To="-3"
+                                        Duration="0:0:0.15" />
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="Shadow"
+                                        Storyboard.TargetProperty="Opacity"
+                                        To="0.12"
+                                        Duration="0:0:0.15" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="Lift"
+                                        Storyboard.TargetProperty="Y"
+                                        To="0"
+                                        Duration="0:0:0.2" />
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="Shadow"
+                                        Storyboard.TargetProperty="Opacity"
+                                        To="0"
+                                        Duration="0:0:0.2" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource LightPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  Место в сетке: цвет по статусу брони (FR-06)  -->
+    <Style x:Key="SeatButton" TargetType="Button">
+        <Setter Property="Width" Value="62" />
+        <Setter Property="Height" Value="52" />
+        <Setter Property="Margin" Value="5" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Background" Value="{StaticResource SeatFreeBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="Lift" Y="0" />
+                        </Grid.RenderTransform>
+                        <Border
+                            x:Name="Bg"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent"
+                            BorderThickness="1.5"
+                            CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="Lift"
+                                        Storyboard.TargetProperty="Y"
+                                        To="-2"
+                                        Duration="0:0:0.12" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="Lift"
+                                        Storyboard.TargetProperty="Y"
+                                        To="0"
+                                        Duration="0:0:0.18" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Opacity" Value="0.8" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Status}" Value="MyBooking">
+                <Setter Property="Background" Value="{StaticResource SeatMineBrush}" />
+                <Setter Property="Foreground" Value="White" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="Busy">
+                <Setter Property="Background" Value="{StaticResource SeatBusyBrush}" />
+                <Setter Property="Foreground" Value="White" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--  Легенда под заголовком комнаты  -->
+    <Style x:Key="LegendDot" TargetType="Border">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+    </Style>
+    <Style x:Key="LegendText" TargetType="TextBlock">
+        <Setter Property="Margin" Value="0,0,22,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+    </Style>
+
 </ResourceDictionary>
