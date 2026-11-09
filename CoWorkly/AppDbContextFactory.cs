@@ -13,7 +13,8 @@ namespace CoWorkly.Data
 
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(basePath)
-                .AddJsonFile("appsettings_new.json", optional: false, reloadOnChange: false)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false)
                 .Build();
 
             var connectionString = configuration.GetConnectionString("DefaultConnection");
