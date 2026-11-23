@@ -31,11 +31,11 @@ namespace CoWorkly.ViewModels
         [ObservableProperty] private string _breadcrumb = "🏢 Коворкинг";
 
         // Максимальные размеры для сетки мест
-        public int MaxRow { get; private set; } = 1;
-        public int MaxColumn { get; private set; } = 1;
+        [ObservableProperty] private int _maxRow = 1;
+        [ObservableProperty] private int _maxColumn = 1;
 
         public MainViewModel()
-        {
+        {https://github.com/kovalnuta/CoWorkly
             LoadCurrentUser();
             LoadFloors();
         }
@@ -101,10 +101,11 @@ namespace CoWorkly.ViewModels
                 .OrderBy(s => s.Row).ThenBy(s => s.Column)
                 .ToList();
 
+            var nowUtc = DateTime.UtcNow;
             var activeBookings = context.Bookings
                 .Where(b => b.Seat.RoomId == roomId &&
-                            b.StartTime <= DateTime.Now &&
-                            b.EndTime > DateTime.Now)
+                            b.StartTime <= nowUtc &&
+                            b.EndTime > nowUtc)
                 .Include(b => b.User)
                 .ToList();
 
@@ -134,13 +135,13 @@ namespace CoWorkly.ViewModels
                 {
                     display.Status = SeatStatus.MyBooking;
                     display.DisplayText = "✓";
-                    display.Tooltip = $"Ваша бронь до {booking.EndTime:HH:mm}";
+                    display.Tooltip = $"Ваша бронь до {booking.EndTime.ToLocalTime():HH:mm}";
                 }
                 else
                 {
                     display.Status = SeatStatus.Busy;
                     display.DisplayText = booking.User?.Username.Substring(0, 1) ?? "?";
-                    display.Tooltip = $"Занято: {booking.User?.Username} до {booking.EndTime:HH:mm}";
+                    display.Tooltip = $"Занято: {booking.User?.Username} до {booking.EndTime.ToLocalTime():HH:mm}";
                 }
 
                 Seats.Add(display);
@@ -172,10 +173,11 @@ namespace CoWorkly.ViewModels
             using var scope = App.ServiceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+            var nowUtc = DateTime.UtcNow;
             var activeBooking = context.Bookings
                 .FirstOrDefault(b => b.SeatId == seat.SeatId &&
-                                     b.StartTime <= DateTime.Now &&
-                                     b.EndTime > DateTime.Now);
+                                     b.StartTime <= nowUtc &&
+                                     b.EndTime > nowUtc);
 
             if (activeBooking != null)
             {
@@ -197,12 +199,12 @@ namespace CoWorkly.ViewModels
                 {
                     UserId = currentUserId,
                     SeatId = seat.SeatId,
-                    StartTime = DateTime.Now,
-                    EndTime = DateTime.Now.AddHours(2)
+                    StartTime = nowUtc,
+                    EndTime = nowUtc.AddHours(2)
                 };
                 context.Bookings.Add(newBooking);
                 context.SaveChanges();
-                StatusMessage = $"✓ Место {seat.SeatNumber} забронировано до {newBooking.EndTime:HH:mm}";
+                StatusMessage = $"✓ Место {seat.SeatNumber} забронировано до {newBooking.EndTime.ToLocalTime():HH:mm}";
             }
 
             if (SelectedRoom != null) LoadSeats(SelectedRoom.Id);
