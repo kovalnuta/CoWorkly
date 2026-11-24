@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 appsettings_new.json
+
+# Локальные настройки подключения (необязательно)
+appsettings.Local.json

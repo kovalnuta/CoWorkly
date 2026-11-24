@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,27 +19,146 @@ namespace CoWorkly
         {
             base.OnStartup(e);
 
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings_new.json", optional: false, reloadOnChange: true)
-                .Build();
+            var configuration = BuildConfiguration(AppContext.BaseDirectory);
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                ShowError("Не задана строка подключения ConnectionStrings:DefaultConnection в appsettings.json.");
+                Shutdown(3);
+                return;
+            }
+
+            // База в Docker: проверить, при необходимости запустить или пересоздать
+            if (!EnsureDatabase(connectionString))
+            {
+                Shutdown(3);
+                return;
+            }
 
             var services = new ServiceCollection();
             services.AddSingleton<IConfiguration>(configuration);
             ConfigureServices(services, configuration);
             ServiceProvider = services.BuildServiceProvider();
 
-            using (var scope = ServiceProvider.CreateScope())
+            try
             {
+                using var scope = ServiceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 context.Database.Migrate();
                 SeedData(context);
             }
+            catch (Exception ex)
+            {
+                ShowError("Не удалось подготовить базу данных (миграции или начальные данные):\n" + ex.Message);
+                Shutdown(3);
+                return;
+            }
 
             new LoginWindow().Show();
         }
 
+        /// <summary>
+        /// Конфигурация: appsettings.json из репозитория (настройки Docker-базы по умолчанию)
+        /// и необязательный appsettings.Local.json для своих локальных настроек (в git не попадает).
+        /// Старый appsettings_new.json больше не читается: из-за устаревших копий с портом 5432
+        /// и другим паролем программа и падала с 28P01.
+        /// </summary>
+        public static IConfiguration BuildConfiguration(string basePath) =>
+            new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false)
+                .Build();
+
+        /// <summary>
+        /// Проверяет базу; если она не запущена — запускает Docker и контейнер,
+        /// если отклоняет пароль — предлагает пересоздать локальную базу.
+        /// </summary>
+        private static bool EnsureDatabase(string connectionString)
+        {
+            var status = DatabaseBootstrap.Check(connectionString, out var details);
+            if (status == DbStatus.Ok)
+                return true;
+
+            var composeDir = DatabaseBootstrap.FindComposeDirectory();
+
+            if (status == DbStatus.Unreachable && composeDir != null)
+            {
+                string? problem;
+                Mouse.OverrideCursor = Cursors.Wait;
+                try
+                {
+                    problem = DatabaseBootstrap.StartContainer(composeDir);
+                    status = problem == null
+                        ? DatabaseBootstrap.WaitUntilReady(connectionString, TimeSpan.FromSeconds(30), out details)
+                        : DbStatus.Other;
+                }
+                finally
+                {
+                    Mouse.OverrideCursor = null;
+                }
+
+                if (problem != null)
+                {
+                    ShowError(problem);
+                    return false;
+                }
+            }
+
+            if (status == DbStatus.Rejected && composeDir != null)
+            {
+                var answer = MessageBox.Show(
+                    "База данных отклонила подключение:\n" + details + "\n\n" +
+                    "Обычно это значит, что локальная база в Docker создана раньше с другим паролем " +
+                    "(например, из другой копии проекта).\n\n" +
+                    "Пересоздать локальную базу? Все локальные данные (пользователи, брони) будут удалены, " +
+                    "учётные записи Anna и Kirill создадутся заново.",
+                    "CoWorkly — база данных",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (answer == MessageBoxResult.Yes)
+                {
+                    string? problem;
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    try
+                    {
+                        problem = DatabaseBootstrap.ResetDatabase(composeDir);
+                        status = problem == null
+                            ? DatabaseBootstrap.WaitUntilReady(connectionString, TimeSpan.FromSeconds(30), out details)
+                            : DbStatus.Other;
+                    }
+                    finally
+                    {
+                        Mouse.OverrideCursor = null;
+                    }
+
+                    if (problem != null)
+                    {
+                        ShowError(problem);
+                        return false;
+                    }
+                }
+            }
+
+            if (status == DbStatus.Ok)
+                return true;
+
+            ShowError(status switch
+            {
+                DbStatus.Unreachable =>
+                    "База данных не отвечает.\n\nЗапустите Docker Desktop и в папке проекта выполните:\ndocker compose up -d\n\n" + details,
+                DbStatus.Rejected =>
+                    "База данных отклонила пользователя или пароль.\n\nВ папке проекта выполните:\n" +
+                    "docker rm -f coworkly_db\ndocker compose down -v\ndocker compose up -d\n\n" + details,
+                _ => "Не удалось подключиться к базе данных:\n" + details
+            });
+            return false;
+        }
+
+        private static void ShowError(string message) =>
+            MessageBox.Show(message, "CoWorkly — база данных недоступна", MessageBoxButton.OK, MessageBoxImage.Error);
 
         private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
