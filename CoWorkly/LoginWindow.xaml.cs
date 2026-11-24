@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
+using System.Windows.Media.Effects; 
 using Microsoft.Extensions.DependencyInjection;
 using CoWorkly.Services;
 
@@ -23,10 +23,10 @@ namespace CoWorkly
             SizeChanged += (_, _) => UpdateIndicator(false);
         }
 
-        // ============ Chrome ============
 
         private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            
             if (e.ClickCount == 2) { ToggleMaximize(); return; }
             if (e.LeftButton == MouseButtonState.Pressed) DragMove();
         }
@@ -66,7 +66,6 @@ namespace CoWorkly
             }
         }
 
-        // ============ Segmented tabs ============
 
         private void LoginTab_Click(object sender, RoutedEventArgs e) => SelectTab(true, true);
         private void RegTab_Click(object sender, RoutedEventArgs e) => SelectTab(false, true);
@@ -167,7 +166,7 @@ namespace CoWorkly
             OpenMainWindow();
         }
 
-        // ============ Регистрация ============
+        // registration 
 
         private void Register_Click(object sender, RoutedEventArgs e)
         {
