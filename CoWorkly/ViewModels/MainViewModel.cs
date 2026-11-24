@@ -35,7 +35,7 @@ namespace CoWorkly.ViewModels
         [ObservableProperty] private int _maxColumn = 1;
 
         public MainViewModel()
-        {https://github.com/kovalnuta/CoWorkly
+        {
             LoadCurrentUser();
             LoadFloors();
         }
